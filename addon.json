@@ -1,0 +1,6 @@
+{
+  "title": "FNV Dialogs",
+  "type": "servercontent",
+  "tags": ["roleplay", "fun"],
+  "ignore": ["*.psd", "*.git*", "*.md", "addon.json"]
+}
