@@ -89,17 +89,6 @@ concommand.Add("fnv_spawn", function() RequestSpawn(false) end)
 concommand.Add("fnv_spawn_enemy", function() RequestSpawn(true) end)
 concommand.Add("fnv_clear", RequestClear)
 
--- Hotkeys: F6 friendly NPC, F7 enemy NPC, F8 remove all
-hook.Add("PlayerButtonDown", "FNV_Hotkeys", function(ply, button)
-    if button == KEY_F6 then
-        RequestSpawn(false)
-    elseif button == KEY_F7 then
-        RequestSpawn(true)
-    elseif button == KEY_F8 then
-        RequestClear()
-    end
-end)
-
 local function CloseDialog()
     if not FNV.Active then return end
     FNV.Active = false

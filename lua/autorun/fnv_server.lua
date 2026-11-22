@@ -159,18 +159,28 @@ net.Receive("FNV_SELECT", function(_, ply)
     end
 end)
 
-local function SpawnTalker(ply, enemy)
+local function SpawnTalker(ply, enemy, auto)
     if not IsValid(ply) then return end
 
     local aim = ply:GetAimVector()
-    local eye = ply:EyePos()
-    local tr = util.TraceLine({
-        start = eye,
-        endpos = eye + aim * 240,
-        filter = ply,
-        mask = MASK_SOLID_BRUSHONLY,
-    })
-    local pos = tr.HitPos - aim * 55
+    aim.z = 0
+    if aim:LengthSqr() < 1 then aim = ply:GetForward() end
+    aim:Normalize()
+
+    local pos
+    if auto then
+        -- Always close enough to talk to with E
+        pos = ply:GetPos() + aim * 105
+    else
+        local eye = ply:EyePos()
+        local tr = util.TraceLine({
+            start = eye,
+            endpos = eye + aim * 240,
+            filter = ply,
+            mask = MASK_SOLID_BRUSHONLY,
+        })
+        pos = tr.HitPos - aim * 55
+    end
 
     local npc = ents.Create(enemy and "npc_combine_s" or "npc_citizen")
     if not IsValid(npc) then return end
@@ -202,12 +212,42 @@ local function SpawnTalker(ply, enemy)
 
     local a = (ply:GetPos() - npc:GetPos()):Angle()
     npc:SetAngles(Angle(0, a.y, 0))
+
+    if auto then ply.FNV_AutoNPC = npc end
 end
+
+-- A friendly citizen appears automatically, no hotkeys needed
+local function SpawnAutoCitizen(ply)
+    if not IsValid(ply) then return end
+    if IsValid(ply.FNV_AutoNPC) then return end
+    SpawnTalker(ply, false, true)
+end
+
+hook.Add("PlayerSpawn", "FNV_AutoCitizen", function(ply)
+    timer.Simple(1.5, function()
+        if IsValid(ply) then SpawnAutoCitizen(ply) end
+    end)
+end)
+
+hook.Add("PlayerInitialSpawn", "FNV_AutoCitizenInitial", function(ply)
+    timer.Simple(3, function()
+        if IsValid(ply) then SpawnAutoCitizen(ply) end
+    end)
+end)
+
+hook.Add("PlayerDisconnected", "FNV_AutoCitizenCleanup", function(ply)
+    if IsValid(ply) and IsValid(ply.FNV_AutoNPC) then
+        ply.FNV_AutoNPC:Remove()
+    end
+end)
 
 local function ClearTalkers(ply)
     local n = 0
     for _, p in ipairs(player.GetAll()) do
-        if IsValid(p) and p.FNV_Busy then EndDialog(p) end
+        if IsValid(p) then
+            if p.FNV_Busy then EndDialog(p) end
+            p.FNV_AutoNPC = nil
+        end
     end
     for _, ent in ipairs(ents.GetAll()) do
         if IsValid(ent) and ent:GetNWBool("FNV_Talker", false) then
